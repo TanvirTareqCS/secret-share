@@ -16,13 +16,27 @@ This is a Next.js project bootstrapped with `create-next-app`. It is a lightning
 
 ## 📸 Screenshots
 
-*(Add screenshots of your application here)*
+### 1. Sender Side
+- **Sender View (Main Form):**
+  ![Sender View](./screenshots/sender%20view.png)
 
-- **Home & Share View:**
-  *(Insert screenshot of the creator page and paper plane animation)*
+- **Password Sender View:**
+  ![Password Sender View](./screenshots/password%20sender%20view.png)
 
-- **Secure View & Bomb Effect:**
-  *(Insert screenshot of the receiver page and bomb explosion)*
+- **Link Generated View:**
+  ![Link View](./screenshots/link%20view.png)
+
+---
+
+### 2. Receiver Side
+- **Receiver View:**
+  ![Receiver View](./screenshots/recever%20view.png)
+
+- **Password Protected Receiver View:**
+  ![Password Receiver View](./screenshots/password%20recever%20view.png)
+
+- **Destruction / Obliterated View:**
+  ![Destroy View](./screenshots/distroy%20view.png)
 
 ---
 
