@@ -1,199 +1,246 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useState, useEffect, use } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ref, get, remove } from "firebase/database";
+import { db } from "../../../lib/firebase"; 
 
-export default function ViewSecret() {
-  const params = useParams();
-  const id = params.id;
+export default function SharedSecret({ params }: { params: Promise<{ id: string }> }) {
+  const unwrappedParams = use(params);
+  const { id } = unwrappedParams;
 
-  const [secretText, setSecretText] = useState("");
-  const [passcodeRequired, setPasscodeRequired] = useState(false);
-  const [passcode, setPasscode] = useState("");
+  const [secretData, setSecretData] = useState<{ text: string; passcode?: string } | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [isExploding, setIsExploding] = useState(false);
+  const [passcode, setPasscode] = useState("");
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isDestroyed, setIsDestroyed] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [countdown, setCountdown] = useState(3);
+  const [isDetonating, setIsDetonating] = useState(false);
+  
+  const [encryptedDisplay, setEncryptedDisplay] = useState("AWAITING_DECRYPTION_KEY...");
 
-  // A deep, bass-heavy explosion sound effect for the bomb
+  useEffect(() => {
+    const fetchSecret = async () => {
+      try {
+        const snapshot = await get(ref(db, `pastebin/${id}`));
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          setSecretData(data);
+          if (!data.passcode) {
+            setIsUnlocked(true);
+          }
+        } else {
+          setError("Secret not found. It may have been destroyed or expired.");
+        }
+      } catch (err) {
+        setError("Error connecting to database.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSecret();
+  }, [id]);
+
+  useEffect(() => {
+    if (secretData?.passcode && !isUnlocked) {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*";
+      const interval = setInterval(() => {
+        let randomized = "";
+        for (let i = 0; i < 24; i++) {
+          randomized += chars[Math.floor(Math.random() * chars.length)];
+        }
+        setEncryptedDisplay(randomized);
+      }, 50);
+      return () => clearInterval(interval);
+    }
+  }, [secretData, isUnlocked]);
+
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (secretData && passcode === secretData.passcode) {
+      setIsUnlocked(true);
+    } else {
+      alert("Incorrect passcode! The system has logged this attempt.");
+      setPasscode("");
+    }
+  };
+
   const playExplosionSound = () => {
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      // Create white noise for the explosion hiss/blast
-      const bufferSize = audioCtx.sampleRate * 1.5;
-      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-      }
-
-      const noise = audioCtx.createBufferSource();
-      noise.buffer = buffer;
-
-      // Filter the noise to make it a deep rumble
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(800, audioCtx.currentTime);
-      filter.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 1.5);
-
+      const osc = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
-      gainNode.gain.setValueAtTime(1.0, audioCtx.currentTime);
+
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+
+      gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
 
-      noise.connect(filter);
-      filter.connect(gainNode);
+      osc.connect(gainNode);
       gainNode.connect(audioCtx.destination);
 
-      noise.start();
-    } catch {
-      // Audio context might be restricted before user interaction, ignore safely
-    }
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1.5);
+    } catch {}
   };
 
-  const fetchSecret = async (inputPasscode = "") => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/get?id=${id}&passcode=${inputPasscode}`);
-      const data = await res.json();
+  const triggerDestruction = async () => {
+    setIsDetonating(true);
+    await remove(ref(db, `pastebin/${id}`));
 
-      if (res.ok) {
-        setSecretText(data.text);
-        setPasscodeRequired(false);
-      } else {
-        if (data.requiresPasscode) {
-          setPasscodeRequired(true);
-        } else {
-          setError(data.error || "Secret not found or has expired.");
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          playExplosionSound();
+          setIsDestroyed(true);
+          return 0;
         }
-      }
-    } catch {
-      setError("Failed to fetch the secret.");
-    } finally {
-      setLoading(false);
-    }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
-  useEffect(() => {
-    if (id) fetchSecret();
-  }, [id]);
-
-  const handleDestroy = async () => {
-    setIsExploding(true);
-    playExplosionSound(); // Trigger the bomb boom sound!
-
-    try {
-      await fetch(`/api/destroy?id=${id}`, { method: "DELETE" });
-      
-      setTimeout(() => {
-        setSecretText("");
-        setError("💥 BOOM! This secret has been completely obliterated and wiped from the database.");
-        setIsExploding(false);
-      }, 1200);
-
-    } catch {
-      alert("Failed to destroy.");
-      setIsExploding(false);
-    }
-  };
-
-  const copyCode = () => {
-    navigator.clipboard.writeText(secretText);
-    alert("Code copied to clipboard!");
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center font-mono">
-        <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-          Decrypting secure transmission...
-        </motion.div>
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center text-green-500 font-mono">
+        <p className="animate-pulse">DECRYPTING SECURE CHANNEL...</p>
       </div>
+    );
+  }
+
+  if (error || !secretData) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-gray-900 border border-red-500/50 p-8 rounded-lg shadow-2xl text-center">
+          <div className="text-6xl mb-4">💥</div>
+          <h1 className="text-2xl font-bold text-red-500 mb-2">ACCESS DENIED</h1>
+          <p className="text-gray-400 font-mono text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isDestroyed) {
+    return (
+      <motion.div 
+        initial={{ backgroundColor: "#ffffff" }}
+        animate={{ backgroundColor: "#030712" }}
+        transition={{ duration: 1 }}
+        className="min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden relative"
+      >
+        <motion.div 
+          initial={{ scale: 1, opacity: 1 }}
+          animate={{ scale: [1, 20, 50], opacity: [1, 1, 0] }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="absolute z-0 text-9xl pointer-events-none"
+        >
+          💥
+        </motion.div>
+
+        <motion.div 
+          animate={{ x: [-20, 20, -20, 20, -10, 10, 0], y: [-20, 20, -20, 20, -10, 10, 0] }}
+          transition={{ duration: 0.5 }}
+          className="z-10 max-w-md w-full bg-red-950/20 border border-red-600 p-8 rounded-lg text-center shadow-[0_0_50px_rgba(220,38,38,0.3)] mt-8"
+        >
+          <h1 className="text-4xl font-black text-red-500 mb-4 tracking-widest">OBLITERATED</h1>
+          <p className="text-red-400 font-mono text-sm">
+            This data has been permanently wiped from the server. It cannot be recovered by anyone.
+          </p>
+        </motion.div>
+      </motion.div>
     );
   }
 
   return (
     <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
       
-      {/* Bomb Explosion Flash Overlay */}
+      {/* RECEIVER SIDE MATRIX RAIN (Shows only while awaiting passcode) */}
       <AnimatePresence>
-        {isExploding && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.2 }}
-            animate={{ opacity: [0, 1, 0.9, 0], scale: [0.5, 4, 10] }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.2 }}
-            className="absolute inset-0 z-50 bg-red-600 flex items-center justify-center pointer-events-none"
+        {!isUnlocked && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-gray-950"
           >
-            <span className="text-9xl">💣💥🔥</span>
+            <div className="absolute inset-0 bg-black/60 z-10" />
+            {Array.from({ length: 50 }).map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ y: "-100%" }}
+                animate={{ y: "100vh" }}
+                transition={{ duration: Math.random() * 3 + 2, repeat: Infinity, ease: "linear", delay: Math.random() * 2 }}
+                className="absolute flex flex-col font-mono text-xl z-0"
+                style={{ left: `${i * 2.5}%` }}
+              >
+                {Array.from({ length: 25 }).map((_, j) => (
+                  <div key={j} className={j === 0 ? "text-white opacity-100 shadow-[0_0_8px_#fff]" : "text-green-500 opacity-60"}>
+                    {String.fromCharCode(33 + Math.floor(Math.random() * 93))}
+                  </div>
+                ))}
+              </motion.div>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="w-full max-w-3xl bg-gray-900 p-8 rounded-xl shadow-2xl border border-gray-800 z-10">
-        
-        <h1 className="text-3xl font-bold mb-2 text-red-500">
-          Secure <span className="text-white">View</span>
-        </h1>
+      <div className={`w-full max-w-3xl bg-gray-900/95 backdrop-blur-md p-8 rounded-xl shadow-2xl border z-10 transition-all duration-500 ${!isUnlocked ? 'border-red-500/50 shadow-[0_0_30px_rgba(220,38,38,0.2)]' : 'border-gray-800'}`}>
+        {!isUnlocked ? (
+          <form onSubmit={handleUnlock} className="space-y-6 text-center relative z-20">
+            <h1 className="text-2xl font-bold text-red-500 mb-2">CLASSIFIED INTEL</h1>
+            <p className="text-gray-400 text-sm mb-6">Enter decryption key to view payload.</p>
+            
+            <div className="bg-gray-950 border border-red-500/50 p-4 rounded-lg overflow-hidden">
+              <span className="text-green-500 font-mono text-lg tracking-widest break-all">
+                {encryptedDisplay}
+              </span>
+            </div>
 
-        {error ? (
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-red-950/50 border border-red-500/30 text-red-400 p-6 rounded-lg text-center font-mono mt-4"
-          >
-            {error}
-          </motion.div>
-        ) : passcodeRequired ? (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-4 pt-4"
-          >
-            <p className="text-gray-400">🔒 This secret is locked with a custom passcode.</p>
             <input
               type="password"
-              placeholder="Enter passcode..."
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
-              className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white font-mono focus:outline-none focus:border-red-500"
+              placeholder="Enter Passcode..."
+              className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white font-mono text-center focus:outline-none focus:border-red-500"
             />
             <button
-              onClick={() => fetchSecret(passcode)}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg"
+              type="submit"
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition-colors"
             >
-              Unlock Secret
+              DECRYPT
             </button>
-          </motion.div>
+          </form>
         ) : (
-          <motion.div 
-            animate={isExploding ? { x: [-25, 25, -25, 25, 0], y: [0, 0, 60, 250], rotate: [0, -8, 15, 35], opacity: [1, 1, 0.4, 0] } : {}}
-            transition={{ duration: 1.1 }}
-            className="space-y-4"
-          >
-            <p className="text-gray-400 text-sm">Review your shared text or code below:</p>
-            <textarea
-              readOnly
-              value={secretText}
-              className="w-full h-80 bg-gray-950 border border-gray-700 rounded-lg p-4 text-green-400 font-mono resize-none focus:outline-none"
-            ></textarea>
-            
-            <div className="flex justify-between items-center pt-2">
-              <button
-                onClick={copyCode}
-                className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
-              >
-                📋 Copy Code
-              </button>
-
-              <button
-                onClick={handleDestroy}
-                className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg font-bold transition-colors flex items-center space-x-2 shadow-lg hover:shadow-red-600/50 scale-105"
-              >
-                <span>💥 Destroy Now</span>
-              </button>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-green-400">Payload Decrypted</h2>
+              {isDetonating && (
+                <span className="text-red-500 font-black text-xl animate-ping">
+                  00:0{countdown}
+                </span>
+              )}
             </div>
-          </motion.div>
+
+            <div className="w-full bg-gray-950 border border-gray-700 rounded-lg p-6 font-mono text-green-300 whitespace-pre-wrap break-words relative overflow-hidden text-sm">
+              <p className="relative z-10">{secretData.text}</p>
+              
+              {isDetonating && (
+                <div className="absolute inset-0 bg-red-500/20 mix-blend-overlay pointer-events-none animate-pulse"></div>
+              )}
+            </div>
+
+            <button
+              onClick={triggerDestruction}
+              disabled={isDetonating}
+              className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-900 text-white font-bold py-4 rounded-lg mt-6 shadow-[0_0_15px_rgba(239,68,68,0.5)] transition-all flex justify-center items-center space-x-2"
+            >
+              <span>{isDetonating ? "INCINERATING..." : "BURN AFTER READING"}</span>
+              {!isDetonating && <span>🔥</span>}
+            </button>
+          </div>
         )}
       </div>
     </main>
