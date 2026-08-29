@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ref, set, push, onValue, get, remove } from "firebase/database";
 import { db } from "@/lib/firebase/config";
 import { speakText } from "@/lib/speech/tts";
@@ -17,6 +17,14 @@ export default function GroupWorkspace({ username, currentGroup, setCurrentGroup
   const [isSending, setIsSending] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [isJoiningGroup, setIsJoiningGroup] = useState(false);
+  
+  // Auto-scroll reference
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom whenever messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   useEffect(() => {
     if (!currentGroup || !username) return;
@@ -113,6 +121,8 @@ export default function GroupWorkspace({ username, currentGroup, setCurrentGroup
             </div>
           </div>
         ))}
+        {/* Invisible div to anchor auto-scroll */}
+        <div ref={messagesEndRef} />
       </div>
       <form onSubmit={handleSendMessage} className="flex space-x-2 items-end">
         <textarea value={newMessageText} onChange={(e) => setNewMessageText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }} placeholder="Type update (Shift+Enter for new line)" className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white font-mono focus:outline-none focus:border-red-500 text-sm resize-none min-h-[50px] max-h-[150px]" rows={2} />

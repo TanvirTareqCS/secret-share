@@ -25,7 +25,8 @@ export default function RenderContent({ content, onOpenCompiler, isReceiver = fa
               <button onClick={() => handleCopyCode(code)} className="bg-gray-700 hover:bg-gray-600 text-[10px] px-3 py-1 text-white font-bold uppercase transition-colors border-r border-gray-600">Copy</button>
               {lang && <div className="bg-gray-800 text-[10px] px-3 py-1 text-gray-400 font-bold uppercase select-none">{lang}</div>}
             </div>
-            <pre className={`p-4 pt-10 rounded-lg overflow-x-auto border border-gray-700 m-0 bg-[#1e1e1e] text-left ${isReceiver ? "shadow-2xl shadow-black/50 p-5" : "shadow-inner"}`}>
+            {/* Added max-h-[400px] and overflow-y-auto to stop long code stretching screen */}
+            <pre className={`p-4 pt-10 rounded-lg overflow-x-auto overflow-y-auto max-h-[400px] border border-gray-700 m-0 bg-[#1e1e1e] text-left ${isReceiver ? "shadow-2xl shadow-black/50 p-5" : "shadow-inner"}`}>
               <code className={`text-xs font-mono hljs language-${lang} whitespace-pre`} dangerouslySetInnerHTML={{ __html: highlightedCode }} />
             </pre>
           </div>
