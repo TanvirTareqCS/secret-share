@@ -46,7 +46,7 @@ export default function CompilerStudio({ isOpen, onClose, initialCode, initialLa
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
           <div className="bg-gray-900 border border-gray-700 w-full max-w-4xl h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-gray-800 bg-gray-950">
               <h3 className="text-lg font-bold text-blue-400 flex items-center space-x-2"><span>▶</span> <span>Execution Studio</span> <span className="text-gray-500 text-xs ml-2 uppercase">({lang})</span></h3>

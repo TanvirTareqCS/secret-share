@@ -111,7 +111,7 @@ export default function GroupWorkspace({ username, currentGroup, setCurrentGroup
         <div><span className="text-green-400 font-bold">Channel: #{currentGroup}</span><span className="text-gray-400 ml-3">Members: {groupMembersList.join(", ")}</span></div>
         <button onClick={handleLeaveGroup} className="text-red-400 hover:text-red-300 underline font-bold">Leave Channel</button>
       </div>
-      <div className="w-full h-[500px] bg-gray-950 border border-gray-800 rounded-lg p-4 overflow-y-auto space-y-3 font-mono">
+      <div className="w-full h-500px bg-gray-950 border border-gray-800 rounded-lg p-4 overflow-y-auto space-y-3 font-mono">
         {messages.length === 0 ? <div className="text-center text-gray-500 pt-24 text-sm">No messages in this workspace yet. Send the first update!</div> : messages.map((msg) => (
           <div key={msg.id} className={`flex flex-col ${msg.sender === username ? "items-end" : "items-start"}`}>
             <div className="text-xs text-gray-500 mb-1 flex items-center">@{msg.sender} • {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}<button onClick={() => speakText(msg.text)} className="ml-2 hover:text-green-400 transition-colors">🔊</button></div>
@@ -125,9 +125,9 @@ export default function GroupWorkspace({ username, currentGroup, setCurrentGroup
         <div ref={messagesEndRef} />
       </div>
       <form onSubmit={handleSendMessage} className="flex space-x-2 items-end">
-        <textarea value={newMessageText} onChange={(e) => setNewMessageText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }} placeholder="Type update (Shift+Enter for new line)" className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white font-mono focus:outline-none focus:border-red-500 text-sm resize-none min-h-[50px] max-h-[150px]" rows={2} />
-        <button type="button" onClick={onOpenDictation} className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 px-4 py-3 rounded-lg transition-colors h-[50px] flex items-center justify-center">🎙️</button>
-        <button type="submit" disabled={isSending} className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-lg transition-colors text-sm h-[50px]">{isSending ? "..." : "Send"}</button>
+        <textarea value={newMessageText} onChange={(e) => setNewMessageText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }} placeholder="Type update (Shift+Enter for new line)" className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white font-mono focus:outline-none focus:border-red-500 text-sm resize-none min-h-50px max-h-150px" rows={2} />
+        <button type="button" onClick={onOpenDictation} className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 px-4 py-3 rounded-lg transition-colors h-50px flex items-center justify-center">🎙️</button>
+        <button type="submit" disabled={isSending} className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-lg transition-colors text-sm h-50px">{isSending ? "..." : "Send"}</button>
       </form>
     </div>
   );

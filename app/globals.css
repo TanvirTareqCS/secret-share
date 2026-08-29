@@ -1,26 +1,76 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* 1. Upgrade flat colors to modern Cyberpunk Neons */
+  --color-red-400: #ff4d6d;
+  --color-red-500: #ff0a43;
+  --color-red-600: #e00034;
+  
+  --color-green-300: #7df9ff;
+  --color-green-400: #00f0ff; /* Replaces green with glowing cyan */
+  --color-green-500: #00c3d0;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* 2. Epic Animated Deep Space Background */
+body {
+  background-color: #030305;
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(255, 10, 67, 0.08), transparent 35%),
+    radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.08), transparent 35%);
+  background-attachment: fixed;
+  color: #e2e8f0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* 3. Sleek Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.5);
+}
+
+@layer utilities {
+  /* 4. Turn all flat containers into frosted glassmorphism */
+  .bg-gray-900, .bg-gray-950 {
+    background-color: rgba(10, 10, 15, 0.5) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  /* 5. Add a subtle neon glow to primary text */
+  .text-red-500 {
+    text-shadow: 0 0 12px rgba(255, 10, 67, 0.5);
+  }
+  .text-green-400 {
+    text-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* 6. Modernize Inputs & Buttons globally */
+input, textarea {
+  transition: all 0.3s ease !important;
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+input:focus, textarea:focus {
+  border-color: #ff0a43 !important;
+  box-shadow: 0 0 20px rgba(255, 10, 67, 0.15) !important;
+  outline: none !important;
+}
+button {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s !important;
+}
+button:active {
+  transform: scale(0.95) !important;
 }
