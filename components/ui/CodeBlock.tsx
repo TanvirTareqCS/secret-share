@@ -119,124 +119,193 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
     if (!text) return null;
 
     const lines = text.split("\n");
-    return (
-      <div className="space-y-3 mt-2 font-sans">
-        {lines.map((line, idx) => {
-          const trimmed = line.trim();
+    const elements: React.ReactNode[] = [];
+    
+    let isInCodeBlock = false;
+    let codeBlockContent: string[] = [];
+    let codeBlockLineStart = 0;
 
-          // Heading 3 (### Heading)
-          if (trimmed.startsWith("### ")) {
-            return (
-              <h4 key={`block-${idx}`} className="text-base font-bold text-purple-400 mt-4 mb-2">
-                {parseInlineMarkdown(trimmed.slice(4), idx)}
-              </h4>
-            );
-          }
-          // Heading 2 (## Heading)
-          if (trimmed.startsWith("## ")) {
-            return (
-              <h3 key={`block-${idx}`} className="text-lg font-extrabold text-purple-300 mt-5 mb-2 border-b border-gray-800 pb-1">
-                {parseInlineMarkdown(trimmed.slice(3), idx)}
-              </h3>
-            );
-          }
-          // Heading 1 (# Heading)
-          if (trimmed.startsWith("# ")) {
-            return (
-              <h2 key={`block-${idx}`} className="text-xl font-black text-purple-200 mt-6 mb-3 border-b border-purple-950 pb-1">
-                {parseInlineMarkdown(trimmed.slice(2), idx)}
-              </h2>
-            );
-          }
+    for (let idx = 0; idx < lines.length; idx++) {
+      const line = lines[idx];
+      const trimmed = line.trim();
 
-          // Bullet point lists
-          if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-            return (
-              <ul key={`block-${idx}`} className="list-disc pl-5 text-gray-300">
-                <li key={`li-${idx}`}>{parseInlineMarkdown(trimmed.slice(2), idx)}</li>
-              </ul>
-            );
-          }
-
-          // Numbered lists
-          const matchOrder = trimmed.match(/^(\d+)\.\s(.*)/);
-          if (matchOrder) {
-            return (
-              <ol key={`block-${idx}`} className="list-decimal pl-5 text-gray-300" start={parseInt(matchOrder[1])}>
-                <li key={`li-${idx}`}>{parseInlineMarkdown(matchOrder[2], idx)}</li>
-              </ol>
-            );
-          }
-
-          // Break spacing
-          if (trimmed === "") {
-            return <div key={`block-${idx}`} className="h-1" />;
-          }
-
-          // Standard paragraph
-          return (
-            <p key={`block-${idx}`} className="text-gray-300 leading-relaxed text-[13px]">
-              {parseInlineMarkdown(line, idx)}
-            </p>
+      // Handle nested markdown code blocks (``` or ''')
+      if (trimmed.startsWith("```") || trimmed.startsWith("'''")) {
+        if (isInCodeBlock) {
+          // Close code snippet
+          const codeString = codeBlockContent.join("\n");
+          elements.push(
+            <pre key={`nested-code-${codeBlockLineStart}`} className="p-3 my-2.5 rounded-md bg-black/60 border border-gray-800 overflow-x-auto text-left shadow-inner">
+              <code className="text-xs font-mono text-emerald-400 whitespace-pre">
+                {codeString}
+              </code>
+            </pre>
           );
-        })}
-      </div>
-    );
+          isInCodeBlock = false;
+          codeBlockContent = [];
+        } else {
+          // Open code snippet
+          isInCodeBlock = true;
+          codeBlockLineStart = idx;
+        }
+        continue;
+      }
+
+      if (isInCodeBlock) {
+        codeBlockContent.push(line);
+        continue;
+      }
+
+      // Horizontal Separator rule (---)
+      if (trimmed === "---" || trimmed === "---") {
+        elements.push(<hr key={`hr-${idx}`} className="border-gray-800 my-4" />);
+        continue;
+      }
+
+      // Blockquotes (>)
+      if (trimmed.startsWith("> ")) {
+        elements.push(
+          <blockquote key={`quote-${idx}`} className="border-l-4 border-purple-500 pl-4 py-1.5 my-2 italic text-gray-300 bg-purple-950/15 rounded-r text-[13px] leading-relaxed">
+            {parseInlineMarkdown(trimmed.slice(2), idx)}
+          </blockquote>
+        );
+        continue;
+      }
+
+      // Heading 3 (###)
+      if (trimmed.startsWith("### ")) {
+        elements.push(
+          <h4 key={`block-${idx}`} className="text-base font-bold text-purple-400 mt-4 mb-2">
+            {parseInlineMarkdown(trimmed.slice(4), idx)}
+          </h4>
+        );
+        continue;
+      }
+
+      // Heading 2 (##)
+      if (trimmed.startsWith("## ")) {
+        elements.push(
+          <h3 key={`block-${idx}`} className="text-lg font-extrabold text-purple-300 mt-5 mb-2 border-b border-gray-800 pb-1">
+            {parseInlineMarkdown(trimmed.slice(3), idx)}
+          </h3>
+        );
+        continue;
+      }
+
+      // Heading 1 (#)
+      if (trimmed.startsWith("# ")) {
+        elements.push(
+          <h2 key={`block-${idx}`} className="text-xl font-black text-purple-200 mt-6 mb-3 border-b border-purple-950 pb-1">
+            {parseInlineMarkdown(trimmed.slice(2), idx)}
+          </h2>
+        );
+        continue;
+      }
+
+      // Unordered list items (- or *)
+      if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+        elements.push(
+          <ul key={`block-${idx}`} className="list-disc pl-5 text-gray-300 my-1">
+            <li key={`li-${idx}`}>{parseInlineMarkdown(trimmed.slice(2), idx)}</li>
+          </ul>
+        );
+        continue;
+      }
+
+      // Numbered list items (1.) - FIXED WITH PROPER ARRAY INDEX SUBSCRIPTS
+      const matchOrder = trimmed.match(/^(\d+)\.\s(.*)/);
+      if (matchOrder) {
+        elements.push(
+          <ol key={`block-${idx}`} className="list-decimal pl-5 text-gray-300 my-1" start={parseInt(matchOrder[1], 10)}>
+            <li key={`li-${idx}`}>{parseInlineMarkdown(matchOrder[2], idx)}</li>
+          </ol>
+        );
+        continue;
+      }
+
+      // Blank lines
+      if (trimmed === "") {
+        elements.push(<div key={`block-${idx}`} className="h-2" />);
+        continue;
+      }
+
+      // General Text Paragraphs
+      elements.push(
+        <p key={`block-${idx}`} className="text-gray-300 leading-relaxed text-[13px] my-1">
+          {parseInlineMarkdown(line, idx)}
+        </p>
+      );
+    }
+
+    return <div className="space-y-1 mt-2 font-sans pb-4">{elements}</div>;
   };
 
   const isShowingExplanation = explanation || isLoading;
 
   return (
-    <div className={`relative group ${isReceiver ? "my-6" : "my-3"}`}>
-      <div className="absolute top-0 right-0 flex z-20 border-b border-l border-gray-700 shadow-md rounded-bl-lg overflow-visible">
-        <ExplainDropdown onSelect={handleExplain} isLoading={isLoading} />
-        <button 
-          onClick={() => onOpenCompiler(code, lang)} 
-          className="bg-blue-600 hover:bg-blue-500 text-[10px] px-3 py-1 text-white font-bold uppercase transition-colors border-r border-gray-600 cursor-pointer"
-        >
-          ▶ Run
-        </button>
-        <button 
-          onClick={() => onCopyCode(code)} 
-          className="bg-gray-700 hover:bg-gray-600 text-[10px] px-3 py-1 text-white font-bold uppercase transition-colors border-r border-gray-600 cursor-pointer"
-        >
-          Copy
-        </button>
-        {lang && (
-          <div className="bg-gray-800 text-[10px] px-3 py-1 text-gray-400 font-bold uppercase select-none">
-            {lang}
-          </div>
-        )}
-      </div>
-
-      {/* Split Screen Grid Layout */}
-      <div className={`grid gap-4 transition-all duration-500 ${isShowingExplanation ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
+    <div className={`relative ${isReceiver ? "my-6" : "my-3"}`}>
+      
+      {/* Split Screen Grid Layout - added min-h-0 to prevent content stretching */}
+      <div className={`grid gap-4 transition-all duration-500 min-h-0 ${isShowingExplanation ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
         
-        {/* Code Pre container */}
-        <pre 
-          className={`p-4 pt-10 rounded-lg overflow-x-auto overflow-y-auto border border-gray-700 m-0 bg-[#1e1e1e] text-left transition-all duration-300 ${
-            isShowingExplanation ? "h-380px" : "max-h-350px"
-          } ${isReceiver ? "shadow-2xl shadow-black/50 p-5" : "shadow-inner"}`}
-        >
-          <code 
-            className={`text-xs font-mono hljs language-${lang} whitespace-pre`} 
-            dangerouslySetInnerHTML={{ __html: highlightedCode }} 
-          />
-        </pre>
+        {/* Code Panel Column - added min-h-0 */}
+        <div className="relative group/code min-h-0">
+          
+          {/* Explain Button: Pinned to top-left corner */}
+          <div className="absolute top-0 left-0 flex z-20 border-b border-r border-gray-700 shadow-md rounded-br-lg overflow-visible bg-[#1e1e1e] backdrop-blur-xs">
+            <ExplainDropdown onSelect={handleExplain} isLoading={isLoading} />
+          </div>
 
-        {/* AI Explanation Panel */}
+          {/* Run & Copy Buttons: Pinned to top-right corner */}
+          <div className="absolute top-0 right-0 flex z-20 border-b border-l border-gray-700 shadow-md rounded-bl-lg overflow-visible bg-[#1e1e1e] backdrop-blur-xs">
+            <button 
+              onClick={() => onOpenCompiler(code, lang)} 
+              className="bg-blue-600 hover:bg-blue-500 text-[10px] px-3 py-1 text-white font-bold uppercase transition-colors border-r border-gray-600 cursor-pointer"
+            >
+              ▶ Run
+            </button>
+            <button 
+              onClick={() => onCopyCode(code)} 
+              className="bg-gray-700 hover:bg-gray-600 text-[10px] px-3 py-1 text-white font-bold uppercase transition-colors cursor-pointer"
+            >
+              Copy
+            </button>
+            {lang && (
+              <div className="bg-gray-800 text-[10px] px-3 py-1 text-gray-400 font-bold uppercase select-none rounded-tr-lg border-l border-gray-700">
+                {lang}
+              </div>
+            )}
+          </div>
+
+          {/* Code Pre container */}
+          <pre 
+            className={`p-4 pt-10 rounded-lg overflow-x-auto overflow-y-auto border border-gray-700 m-0 bg-[#1e1e1e] text-left transition-all duration-300 ${
+              isShowingExplanation ? "h-380px" : "max-h-350px"
+            } ${isReceiver ? "shadow-2xl shadow-black/50 p-5" : "shadow-inner"}`}
+          >
+            <code 
+              className={`text-xs font-mono hljs language-${lang} whitespace-pre`} 
+              dangerouslySetInnerHTML={{ __html: highlightedCode }} 
+            />
+          </pre>
+        </div>
+
+        {/* AI Explanation Panel Column - added min-h-0 to restore beautiful scrollbars */}
         {isShowingExplanation && (
-          <div className="relative p-5 pt-10 rounded-lg border border-purple-500/30 bg-gray-900/50 shadow-inner overflow-y-auto h-380px transition-all duration-300">
-            <div className="absolute top-0 left-0 bg-purple-600 text-[10px] px-3 py-1 text-white font-bold uppercase rounded-br-lg shadow-md select-none">
+          <div className="relative p-5 pt-12 rounded-lg border border-purple-500/30 bg-gray-900/50 shadow-inner overflow-y-auto h-380px min-h-0 transition-all duration-300 text-left">
+            
+            {/* Left corner: Active Mode Badge */}
+            <div className="absolute top-0 left-0 bg-purple-600 text-[10px] px-3 py-1.5 text-white font-bold uppercase rounded-br-lg shadow-md select-none">
               {activeMode} MODE
             </div>
             
+            {/* Right corner: Clean Close Button */}
             <button 
               onClick={() => {
                 setExplanation(null);
                 setActiveMode(null);
               }} 
-              className="absolute top-2 right-2 text-gray-400 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-2.5 right-3 text-gray-400 hover:text-white transition-colors cursor-pointer text-sm"
             >
               ✕
             </button>

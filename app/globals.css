@@ -15,8 +15,8 @@
 body {
   background-color: #030305;
   background-image: 
-    radial-gradient(circle at 15% 50%, rgba(255, 10, 67, 0.08), transparent 35%),
-    radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.08), transparent 35%);
+    radial-gradient(circle at 15% 50%, rgba(255, 10, 67, 0.08), transparent 0%),
+    radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.08), transparent 0%);
   background-attachment: fixed;
   color: #e2e8f0;
 }
