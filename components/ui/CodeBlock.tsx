@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState, useRef, useEffect, Fragment } from "react";
 import hljs from "highlight.js";
 import ExplainDropdown from "./ExplainDropdown";
 
@@ -16,6 +16,10 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
   const [explanation, setExplanation] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeMode, setActiveMode] = useState<string | null>(null);
+
+  // Ref and state to dynamically track the height of your code pre-container
+  const codePreRef = useRef<HTMLPreElement>(null);
+  const [calculatedHeight, setCalculatedHeight] = useState<string>("250px");
 
   const handleExplain = async (mode: string) => {
     setIsLoading(true);
@@ -35,6 +39,21 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
     }
     setIsLoading(false);
   };
+
+  // Measure the code block dynamically and apply exact code size or double
+  useEffect(() => {
+    if ((explanation || isLoading) && codePreRef.current) {
+      const naturalHeight = codePreRef.current.scrollHeight;
+      
+      // If code is short (under 150px), double it so the explanation box has room
+      if (naturalHeight < 150) {
+        setCalculatedHeight(`${naturalHeight * 2}px`);
+      } else {
+        // Otherwise, match the exact size of the main code block
+        setCalculatedHeight(`${naturalHeight}px`);
+      }
+    }
+  }, [explanation, isLoading, code]);
 
   let highlightedCode = code;
   try {
@@ -157,7 +176,7 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
       }
 
       // Horizontal Separator rule (---)
-      if (trimmed === "---" || trimmed === "---") {
+      if (trimmed === "---") {
         elements.push(<hr key={`hr-${idx}`} className="border-gray-800 my-4" />);
         continue;
       }
@@ -212,7 +231,7 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
         continue;
       }
 
-      // Numbered list items (1.) - FIXED WITH PROPER ARRAY INDEX SUBSCRIPTS
+      // Numbered list items (1.) - Fully Type-Safe Regex Indexes
       const matchOrder = trimmed.match(/^(\d+)\.\s(.*)/);
       if (matchOrder) {
         elements.push(
@@ -245,42 +264,44 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
   return (
     <div className={`relative ${isReceiver ? "my-6" : "my-3"}`}>
       
-      {/* Split Screen Grid Layout - added min-h-0 to prevent content stretching */}
+      {/* Split Screen Grid Layout */}
       <div className={`grid gap-4 transition-all duration-500 min-h-0 ${isShowingExplanation ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
         
-        {/* Code Panel Column - added min-h-0 */}
+        {/* Code Panel Column wrapper */}
         <div className="relative group/code min-h-0">
           
           {/* Explain Button: Pinned to top-left corner */}
-          <div className="absolute top-0 left-0 flex z-20 border-b border-r border-gray-700 shadow-md rounded-br-lg overflow-visible bg-[#1e1e1e] backdrop-blur-xs">
+          <div className="absolute top-0 left-0 flex z-20 border-b border-r border-gray-700 shadow-md rounded-br-lg overflow-visible bg-[#1e1e1e]">
             <ExplainDropdown onSelect={handleExplain} isLoading={isLoading} />
           </div>
 
           {/* Run & Copy Buttons: Pinned to top-right corner */}
-          <div className="absolute top-0 right-0 flex z-20 border-b border-l border-gray-700 shadow-md rounded-bl-lg overflow-visible bg-[#1e1e1e] backdrop-blur-xs">
+          <div className="absolute top-0 right-0 flex z-20 border-b border-l border-gray-700 shadow-md rounded-bl-lg overflow-visible bg-[#1e1e1e]">
             <button 
               onClick={() => onOpenCompiler(code, lang)} 
-              className="bg-blue-600 hover:bg-blue-500 text-[10px] px-3 py-1 text-white font-bold uppercase transition-colors border-r border-gray-600 cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-500 text-[10px] px-3 py-1.5 text-white font-bold uppercase transition-colors border-r border-gray-600 cursor-pointer"
             >
               ▶ Run
             </button>
             <button 
               onClick={() => onCopyCode(code)} 
-              className="bg-gray-700 hover:bg-gray-600 text-[10px] px-3 py-1 text-white font-bold uppercase transition-colors cursor-pointer"
+              className="bg-gray-700 hover:bg-gray-600 text-[10px] px-3 py-1.5 text-white font-bold uppercase transition-colors cursor-pointer"
             >
               Copy
             </button>
             {lang && (
-              <div className="bg-gray-800 text-[10px] px-3 py-1 text-gray-400 font-bold uppercase select-none rounded-tr-lg border-l border-gray-700">
+              <div className="bg-gray-800 text-[10px] px-3 py-1.5 text-gray-400 font-bold uppercase select-none rounded-tr-lg border-l border-gray-700">
                 {lang}
               </div>
             )}
           </div>
 
-          {/* Code Pre container */}
+          {/* Code Pre container with ref and dynamic inline style applied */}
           <pre 
+            ref={codePreRef}
+            style={isShowingExplanation ? { height: calculatedHeight } : undefined}
             className={`p-4 pt-10 rounded-lg overflow-x-auto overflow-y-auto border border-gray-700 m-0 bg-[#1e1e1e] text-left transition-all duration-300 ${
-              isShowingExplanation ? "h-380px" : "max-h-350px"
+              isShowingExplanation ? "" : "max-h-[350px]"
             } ${isReceiver ? "shadow-2xl shadow-black/50 p-5" : "shadow-inner"}`}
           >
             <code 
@@ -290,9 +311,12 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
           </pre>
         </div>
 
-        {/* AI Explanation Panel Column - added min-h-0 to restore beautiful scrollbars */}
+        {/* AI Explanation Panel Column with dynamic inline style applied */}
         {isShowingExplanation && (
-          <div className="relative p-5 pt-12 rounded-lg border border-purple-500/30 bg-gray-900/50 shadow-inner overflow-y-auto h-380px min-h-0 transition-all duration-300 text-left">
+          <div 
+            style={{ height: calculatedHeight }}
+            className="relative p-5 pt-12 rounded-lg border border-purple-500/30 bg-gray-900/50 shadow-inner overflow-y-auto min-h-0 transition-all duration-300 text-left"
+          >
             
             {/* Left corner: Active Mode Badge */}
             <div className="absolute top-0 left-0 bg-purple-600 text-[10px] px-3 py-1.5 text-white font-bold uppercase rounded-br-lg shadow-md select-none">
