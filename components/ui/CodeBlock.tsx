@@ -231,12 +231,13 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
         continue;
       }
 
-      // Numbered list items (1.) - Fully Type-Safe Regex Indexes
+      // Numbered list items (1.)
       const matchOrder = trimmed.match(/^(\d+)\.\s(.*)/);
       if (matchOrder) {
+        const [, numberText, content] = matchOrder;
         elements.push(
-          <ol key={`block-${idx}`} className="list-decimal pl-5 text-gray-300 my-1" start={parseInt(matchOrder[1], 10)}>
-            <li key={`li-${idx}`}>{parseInlineMarkdown(matchOrder[2], idx)}</li>
+          <ol key={`block-${idx}`} className="list-decimal pl-5 text-gray-300 my-1" start={parseInt(numberText, 10)}>
+            <li key={`li-${idx}`}>{parseInlineMarkdown(content, idx)}</li>
           </ol>
         );
         continue;
@@ -262,13 +263,13 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
   const isShowingExplanation = explanation || isLoading;
 
   return (
-    <div className={`relative ${isReceiver ? "my-6" : "my-3"}`}>
+    <div className={`relative w-full max-w-full overflow-hidden ${isReceiver ? "my-6" : "my-3"}`}>
       
       {/* Split Screen Grid Layout */}
-      <div className={`grid gap-4 transition-all duration-500 min-h-0 ${isShowingExplanation ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
+      <div className={`grid gap-4 transition-all duration-500 w-full max-w-full overflow-hidden min-h-0 ${isShowingExplanation ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
         
-        {/* Code Panel Column wrapper */}
-        <div className="relative group/code min-h-0">
+        {/* Code Panel Column wrapper - Fixed with constraints */}
+        <div className="relative group/code w-full max-w-full overflow-hidden min-h-0">
           
           {/* Explain Button: Pinned to top-left corner */}
           <div className="absolute top-0 left-0 flex z-20 border-b border-r border-gray-700 shadow-md rounded-br-lg overflow-visible bg-[#1e1e1e]">
@@ -296,26 +297,26 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
             )}
           </div>
 
-          {/* Code Pre container with ref and dynamic inline style applied */}
+          {/* Code Pre container with auto scrollbars and touch momentum */}
           <pre 
             ref={codePreRef}
             style={isShowingExplanation ? { height: calculatedHeight } : undefined}
-            className={`p-4 pt-10 rounded-lg overflow-x-auto overflow-y-auto border border-gray-700 m-0 bg-[#1e1e1e] text-left transition-all duration-300 ${
-              isShowingExplanation ? "" : "max-h-350px"
+            className={`p-4 pt-10 rounded-lg overflow-x-auto overflow-y-auto scrolling-touch border border-gray-700 m-0 bg-[#1e1e1e] text-left transition-all duration-300 w-full max-w-full ${
+              isShowingExplanation ? "" : "max-h-[350px]"
             } ${isReceiver ? "shadow-2xl shadow-black/50 p-5" : "shadow-inner"}`}
           >
             <code 
-              className={`text-xs font-mono hljs language-${lang} whitespace-pre`} 
+              className={`text-xs font-mono hljs language-${lang} whitespace-pre block`} 
               dangerouslySetInnerHTML={{ __html: highlightedCode }} 
             />
           </pre>
         </div>
 
-        {/* AI Explanation Panel Column with dynamic inline style applied */}
+        {/* AI Explanation Panel Column with touch momentum scrolling */}
         {isShowingExplanation && (
           <div 
             style={{ height: calculatedHeight }}
-            className="relative p-5 pt-12 rounded-lg border border-purple-500/30 bg-gray-900/50 shadow-inner overflow-y-auto min-h-0 transition-all duration-300 text-left"
+            className="relative p-5 pt-12 rounded-lg border border-purple-500/30 bg-gray-900/50 shadow-inner overflow-y-auto scrolling-touch min-h-0 transition-all duration-300 text-left w-full max-w-full"
           >
             
             {/* Left corner: Active Mode Badge */}
