@@ -155,7 +155,7 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
           const codeString = codeBlockContent.join("\n");
           elements.push(
             <pre key={`nested-code-${codeBlockLineStart}`} className="p-3 my-2.5 rounded-md bg-black/60 border border-gray-800 overflow-x-auto text-left shadow-inner">
-              <code className="text-xs font-mono text-emerald-400 whitespace-pre">
+              <code className="text-xs font-mono text-emerald-400 whitespace-pre-wrap break-words">
                 {codeString}
               </code>
             </pre>
@@ -306,7 +306,7 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
             } ${isReceiver ? "shadow-2xl shadow-black/50 p-5" : "shadow-inner"}`}
           >
             <code 
-              className={`text-xs font-mono hljs language-${lang} whitespace-pre block`} 
+              className={`text-xs font-mono hljs language-${lang} whitespace-pre-wrap break-words block`} 
               dangerouslySetInnerHTML={{ __html: highlightedCode }} 
             />
           </pre>
