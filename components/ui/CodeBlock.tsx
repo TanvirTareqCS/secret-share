@@ -301,7 +301,7 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
             ref={codePreRef}
             style={isShowingExplanation ? { height: calculatedHeight } : undefined}
             className={`p-4 pt-10 rounded-lg overflow-x-auto overflow-y-auto border border-gray-700 m-0 bg-[#1e1e1e] text-left transition-all duration-300 ${
-              isShowingExplanation ? "" : "max-h-[350px]"
+              isShowingExplanation ? "" : "max-h-350px"
             } ${isReceiver ? "shadow-2xl shadow-black/50 p-5" : "shadow-inner"}`}
           >
             <code 
