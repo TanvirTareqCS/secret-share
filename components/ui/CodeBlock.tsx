@@ -263,13 +263,13 @@ export default function CodeBlock({ code, lang, isReceiver, onOpenCompiler, onCo
   const isShowingExplanation = explanation || isLoading;
 
   return (
-    <div className={`relative w-full max-w-full overflow-hidden ${isReceiver ? "my-6" : "my-3"}`}>
+    <div className={`relative w-full max-w-full overflow-visible ${isReceiver ? "my-6" : "my-3"}`}>
       
       {/* Split Screen Grid Layout */}
-      <div className={`grid gap-4 transition-all duration-500 w-full max-w-full overflow-hidden min-h-0 ${isShowingExplanation ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
+      <div className={`grid gap-4 transition-all duration-500 w-full max-w-full overflow-visible min-h-0 ${isShowingExplanation ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
         
         {/* Code Panel Column wrapper - Fixed with constraints */}
-        <div className="relative group/code w-full max-w-full overflow-hidden min-h-0">
+        <div className="relative group/code w-full max-w-full overflow-visible min-h-0">
           
           {/* Explain Button: Pinned to top-left corner */}
           <div className="absolute top-0 left-0 flex z-20 border-b border-r border-gray-700 shadow-md rounded-br-lg overflow-visible bg-[#1e1e1e]">
